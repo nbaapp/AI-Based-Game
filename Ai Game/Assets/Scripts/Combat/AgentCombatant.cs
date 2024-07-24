@@ -10,10 +10,28 @@ public class AgentCombatant : Combatant
     public void Act()
     {
         // Select an action to take
-        Action action = Actions[Random.Range(0, Actions.Count)];
-        // Select a target
-        Combatant target = Enemies[Random.Range(0, Enemies.Count)];
-        // Take the action
-        TakeAction(action, target);
+        Action action = null;
+        Combatant target = null;
+
+        if (actions.Count > 0) {
+            action = actions[Random.Range(0, actions.Count)];
+        }
+        
+        if (Enemies.Count > 0) {
+            target = Enemies[Random.Range(0, Enemies.Count)];
+        }
+
+        if (action != null && target != null) {
+            TakeAction(action, target);
+        }
+        else {
+            Debug.Log(name + " failed to act");
+        }
+    }
+
+    public override void TakeTurn()
+    {
+        Debug.Log(name + " (Agent) is taking their turn.");
+        Act();
     }
 }

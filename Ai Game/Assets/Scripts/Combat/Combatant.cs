@@ -1,34 +1,87 @@
 using System.Collections;
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
 
-public class Combatant : MonoBehaviour
+public abstract class Combatant : MonoBehaviour
 {
-    private CombatStats stats;
+    private CombatStats currentStats, baseStats;
     public Helmet helmet;
     public Armor armor;
     public Weapon weapon;
     public Accessory accessory1, accessory2;
-    public List<Action> Actions;
+    public GeneralActions generalActions;
+    public List<Action> actions;
 
     // Start is called before the first frame update
     void Start()
     {
-        stats = GetComponent<CombatStats>();
+        Initialize();
     }
 
-    public void TakeDamage(int damage)
+    public void Initialize()
     {
-        stats.health -= damage;
+        baseStats = GetComponent<CombatStats>();
+        currentStats = gameObject.AddComponent<CombatStats>();
+        generalActions = new GeneralActions();
+        actions = new List<Action>();
+
+        SetCurrentStats();
+
+        actions.AddRange(generalActions.actions);
+
+        //set user of all actions
+        foreach (Action action in actions)
+        {
+            action.user = this;
+        }
+    }
+
+    public abstract void TakeTurn();
+
+    private void TakeDamage(int damage)
+    {
+        currentStats.health -= damage;
+        if (currentStats.health <= 0)
+        {
+            Die();
+        }
+    }
+
+    private void Die()
+    {
+        Debug.Log(name + " has died.");
+        Destroy(gameObject);
+    }
+
+    public void TakePhysicalHit(int damage)
+    {
+        damage -= currentStats.defense;
+        if (damage < 0)
+        {
+            damage = 0;
+        }
+        TakeDamage(damage);
+    }
+
+    public void TakeMagicalHit(int damage)
+    {
+        damage -= currentStats.resistance;
+        if (damage < 0)
+        {
+            damage = 0;
+        }
+        TakeDamage(damage);
     }
 
     public void Heal(int amount)
     {
-        stats.health += amount;
+        currentStats.health += amount;
     }
 
     public void TakeAction(Action action, Combatant target)
     {
+        Debug.Log(name + " took action: " + action.actionName);
         action.TakeAction(target);
     }
 
@@ -114,24 +167,55 @@ public class Combatant : MonoBehaviour
 
     private void AddEquipmentStats(Equipment equipment)
     {
-        stats.attackPower += equipment.attackPowerMod;
-        stats.magicPower += equipment.magicPowerMod;
-        stats.defense += equipment.defenseMod;
-        stats.skill += equipment.skillMod;
-        stats.speed += equipment.speedMod;
+        currentStats.attackPower += equipment.attackPowerMod;
+        currentStats.magicPower += equipment.magicPowerMod;
+        currentStats.defense += equipment.defenseMod;
+        currentStats.skill += equipment.skillMod;
+        currentStats.speed += equipment.speedMod;
     }
 
     private void RemoveEquipmentStats(Equipment equipment)
     {
-        stats.attackPower -= equipment.attackPowerMod;
-        stats.magicPower -= equipment.magicPowerMod;
-        stats.defense -= equipment.defenseMod;
-        stats.skill -= equipment.skillMod;
-        stats.speed -= equipment.speedMod;
+        currentStats.attackPower -= equipment.attackPowerMod;
+        currentStats.magicPower -= equipment.magicPowerMod;
+        currentStats.defense -= equipment.defenseMod;
+        currentStats.skill -= equipment.skillMod;
+        currentStats.speed -= equipment.speedMod;
     }
 
     public CombatStats GetStats()
     {
-        return stats;
+        return currentStats;
+    }
+
+    private void SetCurrentStats()
+    {
+        currentStats.health = baseStats.health;
+        currentStats.attackPower = baseStats.attackPower;
+        currentStats.magicPower = baseStats.magicPower;
+        currentStats.defense = baseStats.defense;
+        currentStats.skill = baseStats.skill;
+        currentStats.speed = baseStats.speed;
+
+        if (helmet != null)
+        {
+            AddEquipmentStats(helmet);
+        }
+        if (armor != null)
+        {
+            AddEquipmentStats(armor);
+        }
+        if (weapon != null)
+        {
+            AddEquipmentStats(weapon);
+        }
+        if (accessory1 != null)
+        {
+            AddEquipmentStats(accessory1);
+        }
+        if (accessory2 != null)
+        {
+            AddEquipmentStats(accessory2);
+        }
     }
 }

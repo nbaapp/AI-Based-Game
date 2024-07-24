@@ -6,58 +6,74 @@ using UnityEngine;
 public class CombatManager : MonoBehaviour
 {
     public List<Combatant> combatants;
-    public List<AgentCombatant> agents;
-    public PlayerCombatant player;
+    public CombatUI combatUI;
     public float turnDelay = 1f;
+    private int currentTurnIndex = 0;
+    private bool playerTurnCompleted = false;
 
-    //determine turn order based on speed
-    public void DetermineTurnOrder()
+    void Start()
     {
-        //sort combatants by speed
-        combatants.Sort((a, b) => b.GetStats().speed.CompareTo(a.GetStats().speed));
-    }
+        combatUI.HidePlayerUI();
 
-    public void StartCombat()
-    {
-        //determine turn order
-        DetermineTurnOrder();
-        
-    }
-
-    //run through combatants and have them take their turns, always making sure the next combatant is at the front of the list.
-    public IEnumerator RunCombat()
-    {
-        while (combatants.Count > 1)
+        // Initialize the combatants
+        combatants = new List<Combatant>(FindObjectsOfType<Combatant>());
+        foreach (Combatant combatant in combatants)
         {
-            //get the next combatant
-            Combatant currentCombatant = combatants[0];
-            //find combatant in lists
-            if (agents.Contains(currentCombatant as AgentCombatant))
+            combatant.Initialize();
+        }
+
+        // Sort the combatants by speed in descending order
+        combatants.Sort((a, b) => b.GetStats().speed.CompareTo(a.GetStats().speed));
+
+
+        // Start the turn system
+        StartCoroutine(TakeTurns());
+    }
+
+    private IEnumerator TakeTurns()
+    {
+        while (combatants.Count > 0)
+        {
+            Combatant currentCombatant = combatants[currentTurnIndex];
+
+            if (currentCombatant != null)
             {
-                AgentCombatant agent = currentCombatant as AgentCombatant;
-                agent.Act();
-            }
-            else if (currentCombatant == player)
-            {
-                combatants.RemoveAt(0);
-                combatants.Add(currentCombatant);
-                StartPlayerTurn();
-                yield break;
-            }
-            else
-            {
-                Debug.LogError("Combatant not found in agents or player");
+                if (currentCombatant is PlayerCombatant playerCombatant)
+                {
+                    // Subscribe to the player's turn completion event
+                    playerCombatant.PlayerTurnCompleted.AddListener(OnPlayerTurnCompleted);
+                    
+                    // Player takes their turn
+                    playerCombatant.TakeTurn();
+
+                    // Wait until the player completes their turn
+                    yield return new WaitUntil(() => playerTurnCompleted);
+                    
+                    // Unsubscribe to avoid memory leaks
+                    playerCombatant.PlayerTurnCompleted.RemoveListener(OnPlayerTurnCompleted);
+
+                    // Reset the playerTurnCompleted flag
+                    playerTurnCompleted = false;
+                }
+                else
+                {
+                    // NPC takes their turn
+                    currentCombatant.TakeTurn();
+
+                    // Wait until the combatant's action is completed
+                    // This can be implemented with a coroutine, events, or other async methods
+                    yield return new WaitForSeconds(turnDelay); // Simulate waiting time for the combatant's action
+                }
             }
 
-            //move the combatant to the back of the list
-            combatants.RemoveAt(0);
-            combatants.Add(currentCombatant);
+            // Move to the next combatant's turn
+            currentTurnIndex = (currentTurnIndex + 1) % combatants.Count;
         }
     }
 
-    private void StartPlayerTurn()
+
+    private void OnPlayerTurnCompleted()
     {
-        //enable player controls
+        playerTurnCompleted = true;
     }
-    
 }

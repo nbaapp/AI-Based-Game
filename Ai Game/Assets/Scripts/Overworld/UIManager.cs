@@ -6,69 +6,25 @@ using TMPro;
 
 public class UIManager : MonoBehaviour
 {
+    public Logic logic;
     public TextMeshProUGUI AIText;
-    public GameObject northButton;
-    public GameObject southButton;
-    public GameObject eastButton;
-    public GameObject westButton;
+    public GameObject dialogueBox, mainMenu, talkMenu;
+    private NPC currentNPC;
+    private AIManager aiManager;
 
-    private void Start()
+    public void Start()
     {
-        DisableDirections();
+        logic = FindObjectOfType<Logic>();
+        aiManager = FindObjectOfType<AIManager>();
+
+        dialogueBox.SetActive(false);
+        mainMenu.SetActive(false);
+        talkMenu.SetActive(false);
     }
 
-    public void EnableDirections()
+    public void SetCurrentNPC(NPC npc)
     {
-        northButton.SetActive(true);
-        southButton.SetActive(true);
-        eastButton.SetActive(true);
-        westButton.SetActive(true);
-    }
-
-    public void DisableDirections()
-    {
-        northButton.SetActive(false);
-        southButton.SetActive(false);
-        eastButton.SetActive(false);
-        westButton.SetActive(false);
-    }
-
-    public void EnableDirection(Direction direction)
-    {
-        switch (direction)
-        {
-            case Direction.North:
-                northButton.SetActive(true);
-                break;
-            case Direction.South:
-                southButton.SetActive(true);
-                break;
-            case Direction.East:
-                eastButton.SetActive(true);
-                break;
-            case Direction.West:
-                westButton.SetActive(true);
-                break;
-        }
-    }
-
-    public void DisableDirection(Direction direction)
-    {
-        switch (direction)
-        {
-            case Direction.North:
-                northButton.SetActive(false);
-                break;
-            case Direction.South:
-                southButton.SetActive(false);
-                break;
-            case Direction.East:
-                eastButton.SetActive(false);
-                break;
-            case Direction.West:
-                westButton.SetActive(false);
-                break;
-        }
+        currentNPC = npc;
     }
 
     public void SetAIText(string text)
@@ -76,4 +32,70 @@ public class UIManager : MonoBehaviour
         AIText.text = text;
     }
 
+    public void OpenDialogueBox()
+    {
+        if (currentNPC == null)
+        {
+            Debug.LogWarning("No current NPC set");
+            return;
+        }
+        logic.DisablePlayerControls();
+        dialogueBox.SetActive(true);
+        mainMenu.SetActive(true);
+    }
+
+    private void CloseDialogueBox()
+    {
+        logic.EnablePlayerControls();
+        dialogueBox.SetActive(false);
+        mainMenu.SetActive(true);
+        currentNPC = null;
+    }
+
+    public void ExitMainMenuButton()
+    {
+        mainMenu.SetActive(false);
+        CloseDialogueBox();
+    }
+
+    public void TalkButton()
+    {
+        mainMenu.SetActive(false);
+        talkMenu.SetActive(true);
+    }
+
+    public void ExitTalkMenuButton()
+    {
+        talkMenu.SetActive(false);
+        mainMenu.SetActive(true);
+    }
+
+    public async void FriendlyButton()
+    {
+        Debug.Log("Said something friendly");
+        currentNPC.SetMetPlayer(true);
+        string response = await aiManager.SendMessageToThread("Player acted friendly", currentNPC.interactionHistory);
+        SetAIText(response);
+    }
+
+    public async void NeutralButton()
+    {
+        Debug.Log("Said something neutral");
+        currentNPC.SetMetPlayer(true);
+        string response = await aiManager.SendMessageToThread("Player acted neutral", currentNPC.interactionHistory);
+        SetAIText(response);
+    }
+
+    public async void RudeButton()
+    {
+        Debug.Log("Said something rude");
+        currentNPC.SetMetPlayer(true);
+        string response = await aiManager.SendMessageToThread("Player acted rude", currentNPC.interactionHistory);
+        SetAIText(response);
+    }
+
+    public void ChallengeButton()
+    {
+        Debug.Log("Challenged the NPC");
+    }
 }

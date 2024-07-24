@@ -8,6 +8,7 @@ public class CombatStats : MonoBehaviour
     public int attackPower;
     public int magicPower;
     public int defense;
+    public int resistance;
     public int skill;
     public int speed;
 }

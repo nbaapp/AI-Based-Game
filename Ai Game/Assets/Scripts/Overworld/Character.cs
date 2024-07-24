@@ -6,7 +6,7 @@ public class Character : MonoBehaviour
 {
     public string characterName;
     public List<Item> inventory;
-    public Scenario currentScenario;
+    private RoomData currentRoom;
 
     public void AddItem(Item item)
     {
@@ -28,5 +28,15 @@ public class Character : MonoBehaviour
             }
         }
         return null;
+    }
+
+    public void SetRoom(RoomState room)
+    {
+        room.AddCharacter(this);
+    }
+
+    public RoomData GetRoom()
+    {
+        return currentRoom;
     }
 }

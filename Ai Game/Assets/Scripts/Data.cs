@@ -44,5 +44,13 @@ public abstract class Action
 {
     public string actionName;
     public string actionDescription;
+    public Combatant user;
     abstract public void TakeAction(Combatant target);
+
+    public Action()
+    {
+        actionName = "UNDEFINED";
+        actionDescription = "UNDEFINED";
+        user = null;
+    }
 }
